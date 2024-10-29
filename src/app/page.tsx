@@ -1,46 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Alert,
   Box,
   Container,
+  Snackbar,
   Typography,
 } from "@mui/material";
 
 import type { Station } from "@/types/station";
+import { CollectionRequests } from "@/components/CollectionRequests";
 import { StationCard } from "@/components/StationCard";
 import { UpdateFillPercentageModal } from "@/components/UpdateFillPercentageModal";
 
-// Configurações iniciais das estações
-const initialStations: Station[] = [
-  {
-    id: 1,
-    name: 'Estação 1',
-    fillPercentage: 0,
-    lastCollected: new Date(2024, 1, 1),
-    status: 'normal',
-  },
-  {
-    id: 2,
-    name: 'Estação 2',
-    fillPercentage: 0,
-    lastCollected: new Date(2024, 1, 1),
-    status: 'normal',
-  },
-  {
-    id: 3,
-    name: 'Estação 3',
-    fillPercentage: 0,
-    lastCollected: new Date(2024, 1, 1),
-    status: 'normal',
-  }
-];
-
 export default function Home() {
-  const [stations, setStations] = useState<Station[]>(initialStations);
-  const [selectedStationId, setSelectedStationId] = useState<number | null>(null);
-
+  const [stations, setStations] = useState<Station[]>([]);
+  const [selectedStationId, setSelectedStationId] = useState<Station['id'] | null>(null);
   const [updateFillPercentageModalOpen, setUpdateFillPercentageModalOpen] = useState(false);
+  const [collectionRequests, setCollectionRequests] = useState<Station[]>([]);
+  
+  const [notification, setNotification] = useState<{open: boolean, message: string}>({
+    open: false,
+    message: ''
+  });
+  
+  // Busca as estações no servidor
+  const fetchStations = async () => {
+    try {
+      const response = await fetch('/api/stations');
+      const data = await response.json();
+      setStations(data);
+    } catch (error) {
+      console.error('Falha ao buscar estações:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStations();
+  }, []);
+
+  useEffect(() => {
+    // Cria uma lista de pedidos de coleta para as estações com nível de armazenamento >= 80%
+    const requests = stations.filter(station => station.fillPercentage >= 80);
+    setCollectionRequests(requests);
+  }, [stations]);
 
   // Abre o modal de atualização de volume
   const handleOpenUpdateFillModal = (id: number) => {
@@ -51,40 +55,88 @@ export default function Home() {
   // Atualiza o volume da estação
   const handleUpdateFill = async (id: number, value: number) => {
     try {
+      await fetch('/api/operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          stationId: id,
+          operationType: 'update_fill',
+          fillPercentage: value
+        }),
+      });
 
       setStations(prev => prev.map(station => {
         if (station.id === id) {
-          let status: Station['status'] = 'normal';
-          if (value >= 80) status = 'collection-needed';
-          else if (value >= 70) status = 'warning';
-          
-          return { ...station, fillPercentage: value, status };
+          const updatedStation = { ...station, fillPercentage: value };
+          if (value >= 80) {
+            updatedStation.lastCollectionRequest = new Date();
+          }
+          return updatedStation;
         }
         return station;
       }));
+      
+      setNotification({
+        open: true,
+        message: value >= 80
+          ? 'Coleta necessária! O armazém está quase cheio.'
+          : 'Volume atualizado!'
+      });
+      
       setUpdateFillPercentageModalOpen(false);
     } catch (error) {
-      console.error('Falha ao atualizar o volume da estação:', error);
+      console.error('Falha ao confirmar a coleta:', error);
+      setNotification({
+        open: true,
+        message: 'Falha ao atualizar o volume da estação. Por favor, tente novamente.'
+      })
     }
-  };
+  }
 
-  // Confirma a coleta da estação
-  const handleConfirmCollection = async (id: number) => {
+  // Confirma a coleta de uma estação
+  const handleConfirmCollection = async (station: Station) => {
+    const { id, fillPercentage } = station;
     try {
+      await fetch('/api/operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          stationId: id,
+          operationType: 'collection',
+          fillPercentage
+        }),
+      });
+
       setStations(prev => prev.map(station => {
         if (station.id === id) {
           return {
             ...station,
             fillPercentage: 0,
             lastCollected: new Date(),
-            status: 'normal'
           };
         }
         return station;
       }));
+      
+      setNotification({
+        open: true,
+        message: 'Coleta confirmada! A estação foi esvaziada.'
+      });
     } catch (error) {
       console.error('Falha ao confirmar a coleta:', error);
+      setNotification({
+        open: true,
+        message: 'Falha ao confirmar a coleta. Por favor, tente novamente.'
+      });
     }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
   };
 
   return (
@@ -103,7 +155,7 @@ export default function Home() {
           justifyContent: 'center',
           mb: 4
         }}>
-          <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
             Estações de Armazenamento de Resíduos
           </Typography>
         </Box>    
@@ -120,18 +172,48 @@ export default function Home() {
                 key={station.id}
                 station={station}
                 handleOpenUpdateFillModal={handleOpenUpdateFillModal}
-                onConfirmCollection={handleConfirmCollection}
               />
             ))}
           </Box>
+
+          {collectionRequests.length > 0 && (
+          <Box>
+            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Pedidos de Coleta
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <CollectionRequests stations={collectionRequests} onConfirmCollection={handleConfirmCollection} />
+            </Box>
+          </Box>
+          )}
+
           <UpdateFillPercentageModal
             open={updateFillPercentageModalOpen}
             stationName={
               stations.find((s) => s.id === selectedStationId)?.name || ""
             }
+            fillPercentage={
+              stations.find((s) => s.id === selectedStationId)?.fillPercentage || 0
+            }
             onClose={() => setUpdateFillPercentageModalOpen(false)}
             onUpdateFill={(value) => selectedStationId && handleUpdateFill(selectedStationId, value)}
           />
+
+          <Snackbar
+            open={notification.open}
+            autoHideDuration={6000}
+            onClose={handleCloseNotification}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <Alert
+              onClose={handleCloseNotification} 
+              severity={notification.message.includes('cheio') ? 'warning' : 'success'}
+              sx={{ width: '100%' }}
+            >
+              {notification.message}
+            </Alert>
+          </Snackbar>
+
       </Box>
     </Container>
   );

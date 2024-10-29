@@ -15,13 +15,12 @@ import {
   TableRow,
   Chip
 } from '@mui/material';
-import { historyMock } from "./mock";
 
 interface Operation {
   id: number;
-  station_id: number;
-  operation_type: string;
-  fill_percentage: number;
+  stationId: number;
+  operationType: string;
+  fillPercentage: number;
   timestamp: string;
 }
 
@@ -34,10 +33,11 @@ const HistoryPage: NextPage = () => {
 
   const fetchOperations = async () => {
     try {
-      const data = historyMock as Operation[];
+      const response = await fetch('/api/operations');
+      const data = await response.json();
       setOperations(data);
     } catch (error) {
-      console.error('Failed to fetch operations:', error);
+      console.error('Falha ao buscar operações:', error);
     }
   };
 
@@ -46,18 +46,18 @@ const HistoryPage: NextPage = () => {
   };
 
   const getOperationTypeChip = (type: string) => {
-    const color = type === 'collection' ? 'success' : 'primary';
-    const label = type === 'collection' ? 'Coleta' : 'Atualização de Volume';
+    const color = type === 'collection' ? 'success' : type === 'request' ? 'warning' : 'info';
+    const label = type === 'collection' ? 'Coleta' : type === 'request' ? 'Pedido de Coleta' : 'Atualização';
     return <Chip label={label} color={color} size="small" />;
   };
 
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 4 }}>
-        Operations History
+        Histórico de Operações
       </Typography>
 
-      <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
+      <TableContainer component={Paper} sx={{ maxHeight: 600, width: '100%' }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
@@ -71,13 +71,13 @@ const HistoryPage: NextPage = () => {
             {operations.map((op) => (
               <TableRow key={op.id} hover>
                 <TableCell>{formatTimestamp(op.timestamp)}</TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    Estação {op.station_id}
+                <TableCell width={400}>
+                  <Box sx={{ display: 'flex', minWidth: 70 }}>
+                    Estação {op.stationId}
                   </Box>
                 </TableCell>
-                <TableCell align="center">{getOperationTypeChip(op.operation_type)}</TableCell>
-                <TableCell align="right">{op.fill_percentage}%</TableCell>
+                <TableCell align="center">{getOperationTypeChip(op.operationType)}</TableCell>
+                <TableCell align="right">{op.fillPercentage}%</TableCell>
               </TableRow>
             ))}
           </TableBody>

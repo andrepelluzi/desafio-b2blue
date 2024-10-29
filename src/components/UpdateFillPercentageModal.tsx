@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -12,22 +12,34 @@ import {
 interface UpdateFillPercentageModalProps {
   open: boolean
   stationName: string
+  fillPercentage: number;
   onClose: () => void
-  onUpdateFill: (fillPercentage: number) => void
+  onUpdateFill: (newFillPercentage: number) => void
 }
 
 export const UpdateFillPercentageModal: React.FC<
   UpdateFillPercentageModalProps
-> = ({ open, stationName, onClose, onUpdateFill }) => {
-  const [fillPercentage, setFillPercentage] = useState(50)
+> = ({ open, stationName, fillPercentage, onClose, onUpdateFill }) => {
+  const [newFillPercentage, setNewFillPercentage] = useState(fillPercentage);
 
   const handleSliderChange = (event: Event, newValue: number | number[]) => {
-    setFillPercentage(newValue as number)
+    if (newValue as number >= fillPercentage) {
+      setNewFillPercentage(newValue as number);
+    }
   }
 
   const handleSave = () => {
-    onUpdateFill(fillPercentage)
+    onUpdateFill(newFillPercentage)
     onClose()
+  }
+
+  useEffect(() => {
+    setNewFillPercentage(fillPercentage);
+  }, [fillPercentage]);
+
+  const handleCancel = () => {
+    setNewFillPercentage(fillPercentage); // Reseta o newFillPercentage para o fillPercentage atual
+    onClose();
   }
 
   return (
@@ -38,7 +50,7 @@ export const UpdateFillPercentageModal: React.FC<
           Ajuste o níviel de volume de armazenamento
         </Typography>
         <Slider
-          value={fillPercentage}
+          value={newFillPercentage}
           onChange={handleSliderChange}
           aria-label={`${stationName} volume`}
           valueLabelDisplay='on'
@@ -50,7 +62,7 @@ export const UpdateFillPercentageModal: React.FC<
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
+        <Button onClick={handleCancel}>Cancelar</Button>
         <Button onClick={handleSave}>Salvar</Button>
       </DialogActions>
     </Dialog>
