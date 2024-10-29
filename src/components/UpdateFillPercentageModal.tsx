@@ -46,7 +46,7 @@ export const UpdateFillPercentageModal: React.FC<
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>{stationName}</DialogTitle>
       <DialogContent>
-        <Typography>
+        <Typography variant="body1" sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
           Ajuste o níviel de volume de armazenamento
         </Typography>
         <Slider
@@ -61,9 +61,9 @@ export const UpdateFillPercentageModal: React.FC<
           sx={{ mt: 5 }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleCancel}>Cancelar</Button>
-        <Button onClick={handleSave}>Salvar</Button>
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button variant='contained' color='error' onClick={handleCancel}>Cancelar</Button>
+        <Button variant='contained' color='primary' onClick={handleSave}>Salvar</Button>
       </DialogActions>
     </Dialog>
   )

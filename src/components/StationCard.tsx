@@ -24,7 +24,7 @@ export const StationCard: React.FC<StationCardProps> = ({ station, handleOpenUpd
             {station.name}
           </Typography>
           <Button
-            variant="contained"
+            variant="outlined"
             onClick={() => handleOpenUpdateFillModal(station.id)}
             sx={{ ml: 'auto' }}
           >
