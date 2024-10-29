@@ -2,6 +2,10 @@
 
 Bem-vindo ao desafio da B2Blue, onde sua criatividade e habilidades técnicas serão postas à prova! Este projeto é um sistema de controle de volume de armazenamento de resíduos, desenvolvido com React e Material UI.
 
+![image](https://github.com/user-attachments/assets/4dfa7f0c-a7f9-4dc5-a1e9-158973494274)
+
+
+
 ## Tecnologias Usadas
 
 - **React**: Biblioteca JavaScript para construção de interfaces de usuário.
@@ -35,6 +39,8 @@ Bem-vindo ao desafio da B2Blue, onde sua criatividade e habilidades técnicas se
    ```
 
 4. Abra o navegador e acesse [http://localhost:3000](http://localhost:3000) para ver o resultado.
+5. Ao acessar a aplicação pela primeira vez, um banco de dados(`database.sqlite`) será criado automaticamente para armazenar as operações.
+Por padrão serão criadas 3 estações.
 
 ## Comandos Disponíveis
 
