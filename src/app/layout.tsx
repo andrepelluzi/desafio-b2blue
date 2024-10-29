@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import "./globals.css";
+import { Header } from "@/components/Header";
+import CustomThemeProvider from "@/components/ThemeProvider";
 
 const font = Roboto({
   subsets: ["latin"],
@@ -23,7 +25,10 @@ export default function RootLayout({
       <body
         className={`${font.className} antialiased`}
       >
-        {children}
+        <CustomThemeProvider>
+          <Header title="Desafio B2Blue" />
+          {children}
+        </CustomThemeProvider>
       </body>
     </html>
   );
